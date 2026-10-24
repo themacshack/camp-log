@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Camp Log"><meta name="theme-color" content="#2f6b57">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><title>Camp Log</title>
+<style>
+:root{color-scheme:light dark;--bg:#eef1ee;--card:#fff;--ink:#1d2a26;--mute:#5d6b66;--line:#d3dad6;--acc:#2f6b57;--on:#fff;--star:#c98a1b;--bad:#b3261e}
+@media(prefers-color-scheme:dark){:root{--bg:#141b19;--card:#1d2724;--ink:#e6eeea;--mute:#98a8a2;--line:#2d3a36;--acc:#6fc2a3;--on:#10201a;--star:#e6b04a;--bad:#f2867d}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,system-ui,sans-serif;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) 12px 8px;border-bottom:1px solid var(--line)}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}.row .w{flex:0 0 auto}
+input,select,textarea,button{font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+button{width:auto;cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:600}
+.danger{color:var(--bad);width:100%;margin-top:10px}
+#chips{margin-top:8px}#chips select{padding:7px 8px;font-size:14px}
+#count{padding:10px 14px 0;color:var(--mute);font-size:13px}
+main{padding:8px 12px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:12px;padding:12px 14px;margin:10px 0}
+.r1{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.r1 b{font-size:17px}
+.st{color:var(--star);white-space:nowrap;letter-spacing:1px}.m{color:var(--mute);font-size:13px;margin-top:2px}
+.best{margin-top:6px;font-size:14px}.tag{display:inline-block;border:1px solid var(--line);color:var(--acc);font-size:12px;padding:1px 8px;border-radius:10px;margin:6px 4px 0 0}
+.del{font-size:13px;padding:3px 10px;color:var(--bad);margin-top:8px}
+#fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:30px;font-size:32px;padding:0;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.empty{text-align:center;color:var(--mute);padding:40px 10px}
+dialog{border:0;padding:0;width:100%;max-width:640px;height:100%;max-height:100%;background:var(--bg);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.sheet{height:100%;overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom));display:grid;gap:12px;align-content:start}
+.bar{display:flex;justify-content:space-between;align-items:center}
+label{display:grid;gap:4px;font-size:13px;color:var(--mute)}.chk{display:flex;gap:10px;align-items:center;color:var(--ink);font-size:16px}.chk input{width:auto}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+iframe{width:100%;height:240px;border:1px solid var(--line);border-radius:12px}a{color:var(--acc)}
+.sr{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:2px 0}
+.sr button{border:0;background:none;padding:4px 5px;font-size:26px;line-height:1;color:var(--line)}.sr button.on{color:var(--star)}
+</style></head><body>
+<header><div class="row"><input id="q" type="search" placeholder="Search sites, towns, notes" aria-label="Search"><button id="menu" class="w" aria-label="Menu">&#8943;</button></div>
+<div class="row" id="chips"><select id="fs" aria-label="State"></select>
+<select id="fr" aria-label="Minimum rating"><option value="0">Any rating</option><option value="3">3+ stars</option><option value="4">4+ stars</option><option value="5">5 stars</option></select>
+<select id="so" aria-label="Sort"><option value="rating">Best rated</option><option value="recent">Recent</option><option value="name">Name A-Z</option></select></div></header>
+<div id="count"></div><main id="list"></main><button id="fab" class="pri" aria-label="Add site">+</button>
+<dialog id="ed"><form id="form" class="sheet">
+<div class="bar"><button type="button" id="cancel">Cancel</button><b>Site</b><button class="pri">Save</button></div>
+<div id="map"></div>
+<label>Name<input id="f_name" required></label>
+<div class="g"><label>Site<input id="f_site"></label><label>Cost per night ($)<input id="f_cost" inputmode="decimal"></label></div>
+<div class="g"><label>City<input id="f_city"></label><label>State<select id="f_state"></select></label></div>
+<label>Land manager<select id="f_mgr"></select></label>
+<label>Coordinates<div class="row"><input id="f_ll" placeholder="36.4072, -105.5731"><button type="button" id="gps" class="w">Use my location</button></div></label>
+<label>Last visited<input type="date" id="f_date"></label>
+<label>Location or directions<input id="f_loc"></label>
+<label>Best Site for Future Camping<input id="f_best"></label>
+<div id="stars"></div>
+<label>Tags<input id="f_tags" placeholder="free, water, quiet"></label>
+<label>Notes<textarea id="f_notes" rows="4"></textarea></label>
+<label class="chk"><input type="checkbox" id="f_ret">Would return</label>
+<button type="button" id="del" class="danger">Delete site</button></form></dialog>
+<dialog id="mn"><div class="sheet"><button id="xj" class="pri">Save backup to Files / iCloud Drive</button><button id="xc">Export CSV</button><button id="im">Import backup or Google places</button>
+<input type="file" id="fi" accept=".json,.csv,application/json,text/csv" hidden><p class="m" id="info"></p><button id="mc">Close</button></div></dialog>
+<script>
+const $=id=>document.getElementById(id),KEY='camplog.v2';
+const MG=['BLM','US Forest Service','National Park Service','Army Corps of Engineers','State','County / City','Private','Harvest Host','Other'];
+const ST='AK AL AR AZ CA CO CT DC DE FL GA HI IA ID IL IN KS KY LA MA MD ME MI MN MO MS MT NC ND NE NH NJ NM NV NY OH OK OR PA RI SC SD TN TX UT VA VT WA WI WV WY'.split(' ');
+const TXT=['name','site','city','state','mgr','cost','ll','loc','date','best','tags','notes'];
+const RT=[['rating','Rating'],['solar','Solar exposure'],['privacy','Privacy'],['safety','Safety']];
+let S=[],cur=null,R={};
+try{S=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert('Could not save. Export a backup now.')}};
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
+const opts=(a,first)=>(first!=null?'<option value="">'+first+'</option>':'')+a.map(v=>'<option>'+esc(v)+'</option>').join('');
+const setSel=(el,v)=>{if(v&&![...el.options].some(o=>o.value===v))el.add(new Option(v,v));el.value=v||''};
+$('f_state').innerHTML=opts(ST,'');$('f_mgr').innerHTML=opts(MG,'');
+const stars=n=>n?'\u2605'.repeat(n)+'\u2606'.repeat(5-n):'';
+function render(){
+ const sts=[...new Set(S.map(s=>(s.state||'').toUpperCase()).filter(Boolean))].sort(),was=$('fs').value;
+ $('fs').innerHTML=opts(sts,'All states');$('fs').value=was;
+ const t=$('q').value.toLowerCase().split(/\s+/).filter(Boolean),st=$('fs').value,mn=+$('fr').value,so=$('so').value;
+ const out=S.filter(s=>(!st||(s.state||'').toUpperCase()===st)&&(+s.rating||0)>=mn&&t.every(w=>TXT.map(k=>s[k]).join(' ').toLowerCase().includes(w)));
+ out.sort(so==='name'?(a,b)=>a.name.localeCompare(b.name):so==='recent'?(a,b)=>(b.date||'').localeCompare(a.date||''):(a,b)=>(b.rating||0)-(a.rating||0));
+ $('count').textContent=out.length+' of '+S.length+' sites';
+ $('list').innerHTML=out.length?out.map(s=>{
+  const cost=s.cost===''||s.cost==null?'':(+s.cost===0?'Free':'$'+s.cost+'/night');
+  const m=[[s.city,(s.state||'').toUpperCase()].filter(Boolean).join(', '),s.site&&'Site '+s.site,s.mgr,cost,s.date,s.ret&&'Would return'].filter(Boolean).map(esc).join(' \u00b7 ');
+  const sub=RT.slice(1).filter(([k])=>s[k]).map(([k,l])=>l+' '+s[k]).join(', ');
+  const tags=(s.tags||'').split(',').map(x=>x.trim()).filter(Boolean).map(x=>'<span class="tag">'+esc(x)+'</span>').join('');
+  return '<article class="card" data-id="'+s.id+'"><div class="r1"><b>'+esc(s.name)+'</b><span class="st">'+stars(+s.rating)+'</span></div><div class="m">'+m+'</div>'
+   +(sub?'<div class="m">'+esc(sub)+'</div>':'')+(s.best?'<div class="best"><b>Best Site for Future Camping:</b> '+esc(s.best)+'</div>':'')
+   +(s.notes?'<div class="best">'+esc(s.notes.slice(0,160))+'</div>':'')+tags+'<br><button class="del" data-del="'+s.id+'">Delete</button></article>';
+ }).join(''):'<div class="empty">'+(S.length?'No sites match. Clear the search or filters.':'No sites yet. Tap + to add your first one.')+'</div>';
+}
+function starRows(){$('stars').innerHTML='';RT.forEach(([k,l])=>{const r=document.createElement('div');r.className='sr';r.innerHTML='<span>'+l+'</span>';const b=document.createElement('span');
+ for(let i=1;i<=5;i++){const x=document.createElement('button');x.type='button';x.textContent='\u2605';x.setAttribute('aria-label',i+' stars');x.onclick=()=>{R[k]=R[k]===i?0:i;paint()};b.appendChild(x)}
+ r.appendChild(b);r.dataset.k=k;$('stars').appendChild(r)});paint()}
+function paint(){[...$('stars').children].forEach(r=>[...r.lastChild.children].forEach((b,i)=>b.classList.toggle('on',i<(R[r.dataset.k]||0))))}
+function showMap(){const m=/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec($('f_ll').value),el=$('map');
+ if(!m){el.innerHTML='<p class="m">Add coordinates to see a map.</p>';return}
+ const la=+m[1],lo=+m[2],b=[lo-.01,la-.006,lo+.01,la+.006].map(v=>v.toFixed(5)).join('%2C');
+ el.innerHTML=(navigator.onLine?'<iframe loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox='+b+'&layer=mapnik&marker='+la+'%2C'+lo+'"></iframe>':'<p class="m">The map needs a signal.</p>')
+  +'<p class="m"><a href="https://maps.apple.com/?ll='+la+','+lo+'&z=16">Apple Maps</a> &nbsp; <a href="https://www.google.com/maps/@?api=1&map_action=map&center='+la+','+lo+'&zoom=17&basemap=satellite">Satellite</a></p>'}
+function openEd(id){cur=S.find(s=>s.id===id)||null;const s=cur||{};
+ TXT.forEach(k=>{const el=$('f_'+k);if(el.tagName==='SELECT')setSel(el,s[k]&&(k==='state'?s[k].toUpperCase():s[k]));else el.value=s[k]||''});
+ $('f_ret').checked=!!s.ret;R={};RT.forEach(([k])=>R[k]=+s[k]||0);starRows();showMap();$('del').hidden=!cur;$('ed').showModal();$('ed').firstChild.scrollTop=0}
+$('form').onsubmit=e=>{e.preventDefault();const s=cur||{id:uid()};TXT.forEach(k=>s[k]=$('f_'+k).value.trim());Object.assign(s,R,{ret:$('f_ret').checked});if(!cur)S.push(s);save();$('ed').close();render()};
+const rm=id=>{const s=S.find(x=>x.id===id);if(s&&confirm('Delete '+s.name+'? This cannot be undone.')){S=S.filter(x=>x!==s);save();render();return true}};
+$('del').onclick=()=>{if(cur&&rm(cur.id))$('ed').close()};
+$('cancel').onclick=()=>$('ed').close();$('fab').onclick=()=>openEd();$('f_ll').onchange=showMap;
+$('gps').onclick=()=>navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{$('f_ll').value=p.coords.latitude.toFixed(5)+', '+p.coords.longitude.toFixed(5);showMap()},()=>alert('Could not get your location. Allow location access for this app in Settings.'),{enableHighAccuracy:true,timeout:15000});
+$('list').onclick=e=>{const d=e.target.closest('[data-del]');if(d){rm(d.dataset.del);return}const c=e.target.closest('.card');if(c)openEd(c.dataset.id)};
+['q','fs','fr','so'].forEach(i=>$(i).addEventListener('input',render));
+$('menu').onclick=()=>{$('info').textContent=S.length+' sites stored on this device. Back up often; clearing Safari data erases them.';$('mn').showModal()};$('mc').onclick=()=>$('mn').close();
+async function out(name,text,type){const f=new File([text],name,{type});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name==='AbortError')return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;a.click()}
+const day=()=>new Date().toISOString().slice(0,10);
+$('xj').onclick=()=>out('camp-log-'+day()+'.json',JSON.stringify(S,null,2),'application/json');
+$('xc').onclick=()=>{const c=['name','site','city','state','mgr','cost','ll','loc','date','best','rating','solar','privacy','safety','ret','tags','notes'],q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+ out('camp-log-'+day()+'.csv',[c.join(',')].concat(S.map(s=>c.map(k=>q(s[k])).join(','))).join('\n'),'text/csv')};
+function csv(t){const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=h}else if(h=='"')q=true;else if(h==','){r.push(c);c=''}else if(h=='\n'||h=='\r'){if(h=='\r'&&t[i+1]=='\n')i++;r.push(c);c='';if(r.some(x=>x))rows.push(r);r=[]}else c+=h}
+ if(c||r.length){r.push(c);rows.push(r)}return rows}
+const llOf=u=>{for(const p of [/\/maps\/search\/(-?\d+\.\d+),\s*(-?\d+\.\d+)/,/@(-?\d+\.\d+),(-?\d+\.\d+)/,/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/]){const m=p.exec(u||'');if(m)return m[1]+', '+m[2]}return ''};
+function add(o){if(!o.name)return 0;o.id=o.id||uid();const n=o.name.toLowerCase();
+ if(S.some(s=>s.id===o.id||(s.name.toLowerCase()===n&&(s.ll||'')===(o.ll||'')&&(s.loc||'')===(o.loc||''))))return 0;S.push(o);return 1}
+$('im').onclick=()=>$('fi').click();
+$('fi').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;let n=0;
+ try{const t=await f.text();
+  if(/\.csv$/i.test(f.name)){const rows=csv(t),h=rows.shift().map(x=>x.trim());rows.forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]||'');
+   n+=add({name:o.Title,loc:o.URL,ll:llOf(o.URL),notes:[o.Note,o.Comment].filter(Boolean).join(' - '),tags:f.name.replace(/\.csv$/i,'')})})}
+  else{const d=JSON.parse(t);if(Array.isArray(d))d.forEach(o=>n+=add(o));
+   else(d.features||[]).forEach(ft=>{const p=ft.properties||{},l=p.Location||{},g=l['Geo Coordinates']||{},c=(ft.geometry||{}).coordinates||[],a=l.Address||'',m=/,\s*([^,]+),\s*([A-Z]{2})\s+\d{5}/.exec(a);
+    n+=add({name:p.Title||l['Business Name']||'Saved place',loc:a||p['Google Maps URL']||'',ll:g.Latitude?g.Latitude+', '+g.Longitude:(c.length>1&&(c[0]||c[1])?c[1]+', '+c[0]:''),notes:p.Comment||'',tags:'google-starred',city:m?m[1].trim():'',state:m?m[2]:''})})}
+  save();render();alert('Imported '+n+' new sites.')}catch(x){alert('That file could not be read.')}};
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+render();
+</script></body></html>
